@@ -1,0 +1,42 @@
+name: MSHQC vs Psi4 Benchmark Engine
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Memungkinkan Anda menekan tombol "Run" secara manual
+
+jobs:
+  run-quantum-benchmark:
+    runs-on: ubuntu-latest # Menggunakan server Ubuntu dari GitHub
+    
+    steps:
+    - name: Checkout Public Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Conda Environment (Python 3.10)
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: "3.10" # WAJIB SAMA DENGAN VERSI PYTHON SAAT BUILD .so
+        channels: conda-forge
+        
+    - name: Install Psi4
+      shell: bash -el {0}
+      run: |
+        conda install psi4
+        psi4 --version
+        
+    - name: Install Tambahan (Numpy, dll)
+      shell: bash -el {0}
+      run: |
+        pip install numpy scipy
+        
+    - name: Run MSHQC MP2 Suite
+      shell: bash -el {0}
+      env:
+        # Menambahkan root folder ke PYTHONPATH agar 'import mshqc' terbaca
+        PYTHONPATH: ${{ github.workspace }}
+        OMP_NUM_THREADS: 4      # Atur jumlah core (GitHub Actions free tier punya 2-4 vCPU)
+        OPENBLAS_NUM_THREADS: 4
+      run: |
+        python tests/test_mp2.py
